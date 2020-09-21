@@ -1,6 +1,6 @@
-#include <stdio.h>            /* C input/output                       */
-#include <stdlib.h>           /* C standard library                   */
-#include "glpk.h"     /* GNU GLPK linear/mixed integer solver */
+#include <stdio.h>
+#include <stdlib.h>
+#include "glpk.h"     // GNU GLPK linear/mixed integer solver
 #include <iostream>
 #include <map>
 #include <algorithm>
@@ -22,122 +22,100 @@ const int R = 20;
 double G[N][N];
 double tg[N][N];
 double T[N][N];
-double x[N],y[N], w[N], nw[N];
+double x[N], y[N], w[N], nw[N];
 double e[N][N];
 using namespace std;
-double total_time=0.0;
-double ct_lp =0.0;
-int lp_ham=0;
-string xp  ;
-string yp  ;
-string wp  ;
+double total_time = 0.0;
+double ct_lp = 0.0;
+int lp_ham = 0;
+string xp;
+string yp;
+string wp;
+
 double getorank()
 {
+    //the current wx - wy
     double sum=0.0;
-    for(int i=0;i<N;i++)
+    for(int i = 0; i < N; i++)
     {
-        sum+=1.0*w[i]*(x[i]-y[i]);
+        sum += 1.0 * w[i] * (x[i] - y[i]);
     }
     return sum;
 }
 
-
-//string xp="C:/Users/liang/CLionProjects/whynot/x"+to_string(N)+".txt";
-//string yp = "C:/Users/liang/CLionProjects/whynot/y"+to_string(N)+".txt";
-//
-//string wp = "C:/Users/liang/CLionProjects/whynot/w"+to_string(N)+".txt";
 
 string tp;
 void readT()
 {
     int n;
     ifstream infile;
+    infile.open(tp);
 
-    infile.open (tp);
     infile >> n ;
-//    cout<<n<<" ";
-    for(int i=0;i<N;i++)
+    // cout<<n<<" ";
+    for (int i = 0; i < N; i++)
     {
-        for(int j=0;j<N;j++)
+        for(int j = 0; j < N; j++)
         {
             infile >> T[i][j];
-            T[i][j]*=1.2;
-//            cout<<T[i][j];
+            T[i][j] *= 1.2;
+            // cout<<T[i][j];
         }
     }
 }
 
-
-
 double gettarget()
 {
-    double sum=0.0;
-    for(int i=0;i<N;i++)
+    double sum = 0.0;
+    for(int i = 0; i < N; i++)
     {
-        sum+=1.0*w[i]*(x[i]-y[i]);
+        sum += 1.0 * w[i] * (x[i] - y[i]);
     }
     return sum;
 }
 
-int getxy(int a,int b)
+int getxy(int a, int b)
 {
-    return (a-1)*N+b;
+    return (a - 1) * N + b;
 }
 
 int ia[1+26000000], ja[1+26000000];
 double ar[1+26000000], z, x1, x2, x3;
 
-double total_cost=0;
-//static void *tls = NULL;
-/* NOTE: in a re-entrant version of the package this variable should be
- * placed in the Thread Local Storage (TLS) */
+double total_cost = 0;
+// static void *tls = NULL;
+
+// NOTE: in a re-entrant version of the package this variable should be
+// placed in the Thread Local Storage (TLS)
 void savee()
 {
     ofstream oe;
     oe.open("e");
-    for(int i=0;i<N;i++)
+    for(int i = 0; i < N; i++)
     {
-        for(int j=0;j<N;j++)
+        for(int j = 0; j < N; j++)
         {
-            oe<<e[i][j]<<" ";
+            oe << e[i][j] << " ";
         }
-        oe <<endl;
+        oe << endl;
     }
 }
-double u[N];
 
+double u[N];
 int limit[N];
+
+// pre = 1 means this have following usage , pre=0 means this is the last step
 bool LP(int pre)
 {
-
-//    cerr<<"In LP"<<endl;
-    //int ob, int t_size, string xy, string cap
-//    string path = "C:/Users/liang/CLionProjects/whynot/";
-//     xp ="C:/Users/liang/CLionProjects/whynot/"+xy+"_x/x_"+to_string(ob);
-//     yp = "C:/Users/liang/CLionProjects/whynot/"+xy+"_y/y_"+to_string(ob);
-//     wp = "C:/Users/liang/CLionProjects/whynot/w/w";
-//     tp="C:/Users/liang/CLionProjects/whynot/T/"+to_string(N)+"T_"+to_string(t_size)+"miu"+cap+".txt";
-//    xp=path+"data/x"+to_string(N)+".txt";
-//    yp=path+"data/y"+to_string(N)+".txt";
-//    wp=path+"data/w"+to_string(N)+".txt";
-//    tp = path+"data/"+to_string(N)+"T_2miu0.1.txt";
-
-
-//    cerr<<tp<<endl;
-//    readT();
-//    readxyw();
-//    printxyw();
-//    string outp="C:/Users/liang/CLionProjects/whynot/res/"+to_string(t_size)+xy+cap+"out.txt";
-//    freopen(outp.c_str(),"w",stdout);
-    lp_ham=0;
+   
+    lp_ham = 0;
     clock_t start;
-    memset(e,0,sizeof(e));
+    memset(e, 0, sizeof(e));
     double duration;
 
     start = std::clock();
 
     /* Your algorithm here */
-
 
     /* declare variables */
 
@@ -146,14 +124,13 @@ bool LP(int pre)
     s1: lp = glp_create_prob();
     s2: glp_set_prob_name(lp, "LP");
     s3: glp_set_obj_dir(lp, GLP_MIN);
-
     s4: glp_add_rows(lp, 3*N+1);
 
     // set delta_w[i] * N
-    for(int i=1;i<=N;i++)
+    for(int i = 1; i <= N; i++)
     {
         glp_set_row_name(lp, i, ("dw"+to_string(i)).c_str() );
-        if(limit[i-1]==1)
+        if (limit[i-1] == 1)
         {
             glp_set_row_bnds(lp, i, GLP_DB, 0, 0);
         }
@@ -168,27 +145,20 @@ bool LP(int pre)
     glp_set_row_name(lp, N+1, "target");
     glp_set_row_bnds(lp, N+1, GLP_UP, 0.0, -1.0*gettarget());
 
-//    cerr<<" finish set w and target"<<endl;
+    //    cerr<<" finish set w and target"<<endl;
 
-    //Set u * 2N
-    for(int i=1;i<=N;i++)
+    // Set u * 2N
+    for(int i = 1; i <= N; i++)
     {
         glp_set_row_name(lp, N+1+i, ("u+"+to_string(i)).c_str() );
         glp_set_row_bnds(lp, N+1+i, GLP_UP,0.0,0.0);
     }
-    for(int i=1;i<=N;i++)
+    for(int i = 1; i <= N; i++)
     {
         glp_set_row_name(lp, 2*N+1+i, ("u-"+to_string(i)).c_str() );
         glp_set_row_bnds(lp, 2*N+1+i, GLP_UP,0.0,0.0);
     }
-//    cerr<<" finish set u"<<endl;
-//
-//    s5: glp_set_row_name(lp, 1, "p");
-//    s6: glp_set_row_bnds(lp, 1, GLP_UP, 0.0, 100.0);
-//    s7: glp_set_row_name(lp, 2, "q");
-//    s8: glp_set_row_bnds(lp, 2, GLP_UP, 0.0, 600.0);
-//    s9: glp_set_row_name(lp, 3, "r");
-//    s10: glp_set_row_bnds(lp, 3, GLP_UP, 0.0, 300.0);
+
 
     glp_add_cols(lp, N*N+N);
 //    s11: glp_add_cols(lp, 3);
@@ -217,21 +187,21 @@ bool LP(int pre)
     {
         glp_set_obj_coef(lp, i, 0.0);
     }
+
     // set the sum_u min
     for(int i=1;i<=N;i++)
     {
         glp_set_obj_coef(lp, N*N+i, 1.0);
     }
 
-
     // set -1-wi<= wi' - wi <=1-wi
     int ct=1;
     for(int i=1;i<=N;i++)
     {
         // wi
-
         for(int j=1;j<=N;j++)
-        { //e [j,k]
+        {
+            //e [j,k]
             for(int k=1;k<=N;k++)
             {
 
@@ -353,10 +323,7 @@ bool LP(int pre)
     {
         return false;
     }
-//    s32: z = glp_get_obj_val(lp);
-//    s33: x1 = glp_get_col_prim(lp, 1);
-//    s34: x2 = glp_get_col_prim(lp, 2);
-//    s35: x3 = glp_get_col_prim(lp, 3);
+
 
 
     double minchange=1000.0;
@@ -379,20 +346,19 @@ bool LP(int pre)
         }
 
     }
-    cerr<<lp_ham<<endl;
+  
 
     limit[index_min] = 1;
 
 
     for(int i=1;i<=N;i++)
     {
-//        nw[i-1] = w[i-1];
+
         for(int j=1;j<=N;j++) {
             double tt = glp_get_col_prim(lp, getxy(i, j));
             if (tt > 1e-8) {
                 e[i-1][j-1]=tt;
                 G[i-1][j-1]+=tt;
-//                printf("e[%d][%d] = %lf\n ", i, j, tt);
                 if(pre==0)
                 {
                     w[i - 1] -= tt;
@@ -402,13 +368,7 @@ bool LP(int pre)
             }
         }
     }
-//    cerr<<glp_get_row_name(lp,N+1)<<endl;
-//    cerr<<glp_get_row_stat(lp,N+1)<<endl;
-    //    printxyw();
 
-//    s36: printf("\nz = %g; x1 = %g; x2 = %g; x3 = %g\n", z, x1, x2, x3);
-
-    /* housekeeping */
 
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 //    cerr<<duration<<endl;
@@ -455,6 +415,7 @@ double wg[N], aw[N];
 
 double getnrank()
 {
+    //the relative rank in ground truth 
     double sum=0.0;
     for(int i=0;i<N;i++)
     {
@@ -462,98 +423,98 @@ double getnrank()
     }
     return sum;
 }
+
 void updatew()
 {
     for(int i=0;i<N;i++)
     {
         w[i]=nw[i];
-
     }
 }
 
 
-struct something{
+struct rankitems{
     int id;
     double score;
 }rg[15000],ri[15000];
 
-bool compare(something t1, something t2)
+bool compare(rankitems t1, rankitems t2)
 {
     return t1.score>t2.score;
 }
 
 map<int,int> topset;
-double  Measure(int k)
+
+// Measure the recall
+double Measure(int k)
 {
-    double ans=0;
-    for(int i=0;i<M;i++)
+    double ans = 0;
+    for(int i = 0; i < M; i++)
     {
-        rg[i].id=i;
-        rg[i].score=0;
-        ri[i].id=i;
-        ri[i].score=0;
-        for(int j=0;j<N;j++)
+        rg[i].id = i;
+        rg[i].score = 0;
+        ri[i].id = i;
+        ri[i].score = 0;
+        for(int j = 0; j < N; j++)
         {
-            rg[i].score+=item[i][j]*wg[j];
-            ri[i].score+=item[i][j]*w[j];
+            rg[i].score += item[i][j] * wg[j];
+            ri[i].score += item[i][j] * w[j];
         }
     }
     sort(rg,rg+M, compare);
     sort(ri,ri+M, compare);
 
     topset.clear();
-    for(int i=0;i<k;i++)
+    for(int i = 0; i < k; i++)
     {
-        topset[rg[i].id]=1;
+        topset[rg[i].id] = 1;
     }
 
-    for(int i=0;i<k;i++)
+    for(int i = 0; i < k; i++)
     {
-        if(topset[ri[i].id]==1)
+        if(topset[ri[i].id] == 1)
         {
-            ans+=1.0;
+            ans += 1.0;
         }
     }
-    return ans/k;
+    return ans / k;
 
 }
 
-double  TopkDiff(int k)
+double TopkDiff(int k)
 {
-    double ans=0;
-    for(int i=0;i<M;i++)
+    double ans = 0;
+    for(int i = 0; i < M; i++)
     {
-        rg[i].id=i;
-        rg[i].score=0;
-        ri[i].id=i;
-        ri[i].score=0;
-        for(int j=0;j<N;j++)
+        rg[i].id = i;
+        rg[i].score = 0;
+        ri[i].id = i;
+        ri[i].score = 0;
+        for(int j = 0; j < N; j++)
         {
-            rg[i].score+=item[i][j]*aw[j];
-            ri[i].score+=item[i][j]*w[j];
+            rg[i].score += item[i][j] * aw[j];
+            ri[i].score += item[i][j] * w[j];
         }
     }
     sort(rg,rg+M, compare);
     sort(ri,ri+M, compare);
 
     topset.clear();
-    for(int i=0;i<k;i++)
+    for(int i = 0; i < k; i++)
     {
-        topset[rg[i].id]=1;
+        topset[rg[i].id] = 1;
     }
 
-    for(int i=0;i<k;i++)
+    for(int i = 0; i < k; i++)
     {
-        if(topset[ri[i].id]==1)
+        if(topset[ri[i].id] == 1)
         {
-            ans+=1.0;
+            ans += 1.0;
         }
     }
-    return ans/k;
+    return ans / k;
 
 }
-
-
 
 void readembed(int user_id)
 {
@@ -563,7 +524,7 @@ void readembed(int user_id)
     string awp=path+"gl";
     string itemp=path+"item";
     string wgp = path+"100user";
-//    inpair.open(path+"pairs");
+    //  inpair.open(path+"pairs");
     infileaw.open (awp);
     infileitem.open (itemp);
     infilew.open (wgp);
@@ -599,22 +560,15 @@ void readembed(int user_id)
             infileitem >> item[i][j];
         }
     }
-//    srand(time(0));
+
     int cx[N], cy[N], candidate=0;
     for(int step=1;step<=R;step++) {
         cerr<<"Step:"<<step<<endl;
         int ct = 0;
         candidate = 0;
         for (int loop = 1; loop <= 1; loop++) {
-
-//                for(int i=0;i<N;i++)
-//                {
-//                    x[i]=item[a[ct]][i];
-//                    y[i]=item[b[ct]][i];
-//                }
-
             ct++;
-//            cerr<<getorank() * getnrank()<<endl;
+
             while (1) {
             int ta = rand() % M;
             if(topset[ta]==1)
@@ -626,7 +580,6 @@ void readembed(int user_id)
             }
 
             if (getorank() * getnrank() < 0) {
-//                    cout<<a<<" "<<b<<endl;
                 break;
             }
         }
@@ -635,7 +588,6 @@ void readembed(int user_id)
                     swap(x[i], y[i]);
                 }
             }
-//            cerr<<gettarget()<<endl;
             cerr<<getorank()<<endl;
             cerr<<getnrank()<<endl;
                if(!LP(0))
@@ -650,7 +602,7 @@ void readembed(int user_id)
         hitsfile<<Measure(K)<<endl;
         difffile<<TopkDiff(K)<<endl;
         hamfile<<lp_ham<<endl;
-        // /        cout<<"count: "<<ct<<endl<<endl;
+       
         for(int i=0;i<N;i++)
         {
             myfile<<w[i]<<" ";
@@ -721,7 +673,8 @@ void init(int source, int des, int size_n)
 }
 
 double spfa()
-{
+{ // this is a shortest path algorithm, return the shortest path distance
+// from s to t
     int i, temp;
     for(i = 0; i < size; i++)
     {
@@ -782,7 +735,6 @@ double MCMF()
         }
 
         temp = t;
-//        cout << flow << " " << cost << endl;
         sum += flow * cost;
         flow_sum += flow;
         while(temp != s)
@@ -791,11 +743,10 @@ double MCMF()
                 sou_di = pre[temp];
             edge[pre[temp]][temp].flow += flow;
             edge[temp][pre[temp]].flow -= flow;
-//			cout << pre[temp] << " " << temp << " ";
-//			cout << edge[pre[temp]][temp].flow << endl;
+
             temp = pre[temp];
         }
-//        cerr<<sou_di<<"->"<<tar_di<<":"<<flow*cost - flow*2*2<<endl;
+
         outsum[sou_di] += flow*cost - flow*2*2;
         insum[tar_di] += flow*cost - flow*2*2;
 
@@ -821,135 +772,91 @@ double HeuristicMCMF()
             if(i!=j)
             {
                 edge[i][j].cap = T[i][j];
-//                cout<<"T[i][j]:"<<T[i][j]<<endl;
                 edge[i][j].cost = 0;
             }
         }
     }
 
-//    cerr<<"Inset:";
+
     for(int i=0;i<N;i++)
     {
         if(inset[i])
         {
-//            cerr<<i<<" ";
-            //range -1, 1
-            //edge[N][i].cap = max(min(1 + w[i],2.0),0.0);
-            //range 0, 1
             edge[N][i].cap = max(min( w[i], 1.0),0.0);
-//            cout<<edge[N][i].cap<<endl;
-            //x[i] > y[i]
             edge[N][i].cost= (y[i] - x[i] + 2);
-//            cout<<edge[N][i].cost<<endl;
         }
 
     }
-//    cerr<<endl;
 
-//    cerr<<"Outset: ";
     for(int i=0;i<N;i++)
     {
         if(outset[i])
         {
-//            cerr<<i<<" ";
-//            cout<<"out:"<<i<<" ";
-            //range -1, 1
-//            edge[i][N+1].cap = max(min(1 - w[i], 2.0),0.0);
-            // range 0, 1
             edge[i][N+1].cap = max(min(1- w[i], 1.0),0.0);
-//            cout<<edge[i][N+1].cap<<endl;
-            //y[i] > x[i]
             edge[i][N+1].cost= (x[i] - y[i] + 2);
-//            cout<<edge[i][N+1].cost<<endl;
         }
     }
-//    cerr<<endl;
 
-   double cla = MCMF();
+
+    double cla = MCMF();
     int flag = 1;
     double res = cla - 2*2*flow_sum;
-//    cerr<<cla<<" "<<flow_sum<<endl;
-//    cerr<<"Res Before:"<<res<<endl;
     if(res<0)
     {
-//        cerr<<"Insum"<<endl;
-
         for(int i=0;i<N;i++)
         {
-
             if(abs(insum[i])<1e-10&&inset[i])
             {
                 inset[i]=0;
                 insum[i]=0;
-//                cout<<"remove Inset"<<i<<endl;
             }
 
             if(goal+res-insum[i]<=1e-10&&inset[i])
             {
-
-//                cerr<<"Goal:"<<goal<<" & res "<<res<<endl;
-//                cerr<<i<<":"<<insum[i];
-//                cerr<<" "<<inset[i]<<endl;
 
                 flag=0;
                 res -= insum[i];
                 inset[i]=0;
                 insum[i]=0;
 
-//                cout<<"remove Inset"<<i<<endl;
             }
-
-
-
         }
 
-        if(flag)
+        if (flag)
         {
-            for(int i=0;i<N;i++)
+            for (int i=0;i<N;i++)
             {
-
-                if(abs(outsum[i])<1e-10&&outset[i])
+                if (abs(outsum[i])<1e-10&&outset[i])
                 {
                     outset[i]=0;
                     outsum[i]=0;
-//                cout<<"remove Outset"<<i<<endl;
+
                 }
 
                 if(goal+res-outsum[i]<=1e-10&&outset[i])
                 {
-//                    cerr<<i<<":"<<outsum[i]<<" ";
-//                    cerr<<outset[i]<<endl;
+
 
                     flag=0;
                     res-=outsum[i];
                     outset[i]=0;
                     outsum[i]=0;
 
-//                cout<<"remove Outset"<<i<<endl;
+
                 }
 
             }
         }
 
     }
-//    cerr<<res<<endl;
+
 
 
     if(flag==0)
     {
         return HeuristicMCMF();
     }
-//    double ingoal=0;
-//    for(int i=0;i<N;i++)
-//    {
-//        if(inset[i]||outset[i])
-//        {
-//            cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
-//            ingoal+=insum[i];
-//        }
-//    }
-//    cout<<"Goal:"<<goal<<endl;
-//    cout<<"Ingoal"<<ingoal<<endl;
+
     cout<<"Res: "<<res<<endl;
     return res;
 
@@ -966,6 +873,7 @@ bool comp(ccc a, ccc b)
 {
     return a.weights>b.weights;
 }
+
 void naive()
 {
     ccc ar[N*N];
@@ -1017,15 +925,9 @@ void naive()
 
 int testmc(int pre_lp)
 {
-//    loaddata();
+    // loaddata();
     flow_sum=0;
 
-//    for(int i=0;i<N;i++)
-//    {
-////        x[i]=item[1][i];
-////        y[i]=item[2][i];
-//        goal += (x[i]-y[i])*w[i];
-//    }
 
     clock_t start;
     double duration;
@@ -1033,14 +935,13 @@ int testmc(int pre_lp)
     start = std::clock();
     memset(inset,0,sizeof(inset));
     memset(outset,0,sizeof(outset));
+    // initialization
 
-
-
-    if(pre_lp==0)
+    if (pre_lp==0) // none previous linear results needed
     {
-        for(int i=0;i<N;i++)
+        for (int i=0;i<N;i++)
         {
-            if(x[i]>y[i])
+            if (x[i]>y[i])
             {
                 inset[i]=1;
             }
@@ -1050,61 +951,59 @@ int testmc(int pre_lp)
             }
         }
     }
-    else
+    else //load the previous results from l[]
     {
-        for(int i=0;i<N;i++)
+        for (int i=0;i<N;i++)
         {
-            if(x[i]>y[i]&&u[i]>1e-8)
+            if (x[i]>y[i]&&u[i]>1e-8)
             {
                 inset[i]=1;
             }
-            else if(x[i]<y[i]&&u[i]>1e-8)
+            else if (x[i]<y[i]&&u[i]>1e-8)
             {
                 outset[i]=1;
             }
         }
     }
 
-
-
-
+    // the proposed algorithm
     double cla = HeuristicMCMF();
-//    cout<<cla<<endl;
+    // cout<<cla<<endl;
     int Ham=0;
     double rate=1.0;
     double sum_xx=0;
-    for(int i=0;i<N;i++)
+    for (int i = 0; i < N; i++)
     {
-        if(inset[i]||outset[i])
+        if (inset[i] || outset[i]) // mark those dimensions have been changed
         {
             Ham++;
             sum_xx+=abs(insum[i]);
-//            cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
+            // cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
         }
     }
     rate= abs(goal)/abs(sum_xx);
-//    cerr<<"Rate:"<<rate<<endl;
+    // cerr<<"Rate:"<<rate<<endl;
     rate=min(rate, 1.0);
-    for(int i=0;i<N;i++)
+    for(int i=0;i<N;i++) // round up those changes
     {
         if(inset[i]||outset[i])
         {
-
             cerr<<i<<": -"<<inweight[i]*rate<<"| +"<<outweight[i]*rate<<endl;
 
             w[i] -= inweight[i]*rate;
             w[i] += outweight[i]*rate;
+
             //change it to above zero
             w[i] = max(0.0, min(w[i],1.0));
 
-//            cout<<i<<": "<<w[i]<<endl;
-//            w[i] = max(-1.0,min(w[i],1.0));
-//            cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
+            // cout<<i<<": "<<w[i]<<endl;
+            // w[i] = max(-1.0,min(w[i],1.0));
+            // cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
         }
     }
     duration = std::clock() - start;
 
-//    cout<<"Time: " <<duration/CLOCKS_PER_SEC<<endl;
+    // cout<<"Time: " <<duration/CLOCKS_PER_SEC<<endl;
     return Ham;
 }
 
@@ -1114,200 +1013,217 @@ int pa,pb;
 string path;
 ofstream curtimefile;
 
-void VaryTest(int g,int user_id, int rounds, int method, int g_size, int ue)
+void VaryTest(int user_id, int rounds, int method,int ue)
 {
-    ifstream infileaw,infileitem,infilew,pairspath;
-    string name[5]={"lp", "mcmf", "lpmc","naive","iterlp"};
+    // user_id for the user, where we should use the same for different datasets 
+    // method, 1 for lp, 2 for iterssp, 3 for hybrid, 4 for greedy, 5 for itrlp
+    // ue is the flag for record the effectiveness
+    ifstream infileaw, infileitem, infilew, pairspath;
+    string name[5] = {"lp", "mcmf", "lpmc", "naive", "iterlp"};
 
+    // here  path is the root directory for the code and data
+    tp = path + "G.txt";
+    // this is the initialized vector
+    string awp = path + "gl";
+    // this is the item set
+    string itemp = path + "item";
+    // this is the user set
+    string wgp = path +"100user";
 
-
-    tp = path+"G.txt";
-
-    string awp=path+"gl";
-    string itemp=path+"item";
-    string wgp = path+"100user";
-//    std::random_device rd;
+    // std::random_device rd;
     mt19937 mt_rand(time(0));
 
 
-    ofstream hamcompare;
-//    inpair.open(path+"pairs");
-    infileaw.open (awp);
-    infileitem.open (itemp);
-    infilew.open (wgp);
+    ofstream hamcompare; 
+
+    //inpair.open(path+"pairs");
+    infileaw.open(awp);
+    infileitem.open(itemp);
+    infilew.open(wgp);
     ofstream myfile, hitsfile, hamfile, timefile, difffile;
-    timefile.open(path+name[method-1]+"/time"+to_string(user_id));
-    myfile.open (path+name[method-1]+"/wres"+to_string(user_id));
-    if(ue==1)
-    {
-        hitsfile.open(path+name[method-1]+"/hits"+to_string(user_id));
-        difffile.open(path+name[method-1]+"/diff"+to_string(user_id));
+    // these are the storage files
+    timefile.open(path + name[method-1] + "/time" + to_string(user_id));
+    myfile.open (path + name[method-1] + "/wres" + to_string(user_id));
+
+    if (ue == 1)
+    { 
+        hitsfile.open(path+name[method-1] + "/hits" + to_string(user_id));
+        difffile.open(path+name[method-1] + "/diff" + to_string(user_id));
     }
 
-    hamfile.open(path+name[method-1]+"/"+to_string(g)+"ham"+to_string(user_id));
-    hamcompare.open(path+name[method-1]+"/"+to_string(g)+"fea"+to_string(g_size)+to_string(user_id));
+    hamfile.open(path+name[method-1] + "/" + to_string(g) + "ham" + to_string(user_id));
+    hamcompare.open(path+name[method-1] + "/" + to_string(g) + "fea" + to_string(g_size) + to_string(user_id));
     readT();
 
-    for(int i=0;i<N;i++)
+    for (int i = 0; i < N; i++)
     {
-        infileaw>>aw[i];
-
-        w[i]=aw[i];
-
+        //reading the vector
+        infileaw >> aw[i];
+        //w is the vector used during experiments
+        w[i] = aw[i];
     }
-    for(int i=0;i<=user_id;i++)
+
+    for (int i = 0; i <= user_id; i++)
     {
-        for(int j=0;j<N;j++)
+        for (int j = 0; j < N; j++)
         {
-            infilew>>wg[j];
+            infilew >> wg[j];
         }
     }
 
-    double sum_gl=0.0;
-    for(int i=0;i<N;i++)
+    double sum_gl = 0.0;
+    for (int i = 0; i < N; i++)
     {
-        sum_gl+=wg[i];
+        sum_gl += wg[i];
     }
-    for(int i=0;i<N;i++)
+    for (int i = 0; i < N; i++)
     {
-        aw[i]=sum_gl/N;
-        w[i]=aw[i];
+        aw[i] = sum_gl / N;
+        w[i] = aw[i];
     }
-    Measure(K);
-    for(int i=0;i<M;i++)
+
+    Measure(K); // Measure the top-k recall
+
+    for (int i = 0; i < M; i++)
     {
-        for(int j=0;j<N;j++)
+        for (int j = 0; j < N; j++)
         {
+            //read all of the items
             infileitem >> item[i][j];
         }
     }
 
 
-    int cx[N], cy[N], candidate=0;
-    int ham=0;
-    int nofes=0;
-    double ttham=0;
-    double duration=0;
-    clock_t start = clock();
-    for(int step=1;step<=rounds;step++) {
-        cerr<<"Step:"<<step<<endl;
+    int cx[N], cy[N], candidate = 0;
+    int ham = 0;
+    int nofes = 0;
+    double ttham = 0;
+    double duration = 0;
+    clock_t start = clock(); //timer
+    for (int step = 1; step <= rounds; step++)
+    {
+        cerr << "Step:" << step << endl;
         int ct = 0;
         candidate = 0;
         start = clock();
         for (int loop = 1; loop <= 1; loop++) {
-
-
             ct++;
-            while (1) {
+            while (1)
+            {
+                //this aims to make sure the ideal pairs are selected
                 int ta = mt_rand() % M;
-                if(topset[ta]==1)
+                if(topset[ta] == 1)
                     continue;
-                int tb =mt_rand() % K;
-                for (int i = 0; i < N; i++) {
+                int tb = mt_rand() % K;
+                for (int i = 0; i < N; i++)
+                {
                     x[i] = item[ta][i];
                     y[i] = item[rg[tb].id][i];
                 }
                 pb = rg[tb].id;
-                pa=ta;
-                if (getorank() * getnrank() < 0) {
+                pa = ta;
+                if (getorank() * getnrank() < 0) //make sure (wx-wy)*(w'x - w'y)<0
+                {
                     break;
                 }
-
-
             }
-            if (getorank() < 0) {
+            if (getorank() < 0)
+            {
+                //make sure wx<wy
                 for (int i = 0; i < N; i++) {
                     swap(x[i], y[i]);
                 }
                 swap(pa,pb);
             }
-            cerr<<pa<<" "<<pb<<endl;
-//            cerr<<gettarget()<<endl;
-            cerr<<getorank()<<endl;
-//            cerr<<getnrank()<<endl;
+            cerr << pa << " " << pb << endl;
+            //cerr<<gettarget()<<endl;
+            cerr << getorank() << endl;
+            //cerr<<getnrank()<<endl;
             goal = getorank();
 
-            for(int i=0;i<N;i++)
+            for (int i = 0; i < N; i++)
             {
-                aw[i]=w[i];
-                limit[i]=0;
+                aw[i] = w[i];
+                limit[i] = 0;
             }
-            if(method==1)
-            { //linear programming
+
+            if (method == 1) //linear programming
+            {
                 LP(0);
+                // ham is the number of dimension changed
                 ham = lp_ham;
             }
-            else if (method==2)
-            { //mincostmaxflow  itrssp
+            else if (method == 2) //mincostmaxflow  itrssp
+            {
                 ham = testmc(0);
             }
-            else if(method==3)
-            { //linear programming + itrssp
+            else if (method == 3) //linear programming + itrssp
+            {
                 LP(1);
-                cerr<<lp_ham<<endl;
+                cerr << lp_ham << endl;
                 ham = testmc(1);
-                cerr<<ham<<endl;
-            }else  if(method==4)
-            {  // greedy algorithm
+                cerr << ham << endl;
+            }
+            else if (method == 4) // greedy algorithm
+            {
                 naive();
             }
-            else
-            {  //updated lp
+            else //updated lp
+            {
                 for (int i = 0; i < N; i++)
                 {
                     limit[i] = 0;
                     nw[i] = w[i];
                 }
-                while(1)
+                while (1)
                 {
                     updatew();
-                    bool feasibile = LP(0);
-                    if(!feasibile)
+                    bool feasible = LP(0);
+                    if (!feasible)
                         break;
                 }
-
-
             }
 
-            if(getorank()>1e-5)
+            if (getorank() > 1e-5)
                 nofes++;
             else
             {
-                ttham+=ham;
-                hamfile<<ham<<endl;
-
-                curtimefile<<"method"<<method<<"gcap"<<g<<"gsize"<<g_size<<"time"<<(clock() -start)/CLOCKS_PER_SEC<<endl;
+                ttham += ham;
+                hamfile << ham << endl;
+                curtimefile << "method" << method << "gcap" << g << "gsize"<< g_size << "time" << (clock() -start)/CLOCKS_PER_SEC << endl;
             }
 
         }
-        double ingoal=0;
-        for(int i=0;i<N;i++)
+
+        double ingoal = 0;
+        for (int i = 0; i < N; i++)
         {
-            if(inset[i]||outset[i])
+            //debug information for those dimensions have changed
+            if (inset[i] || outset[i])
             {
-                cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
-                ingoal+=insum[i];
+                cout << i << " " << insum[i] << " " << outsum[i] << endl;
+                ingoal += insum[i];
             }
         }
-        cout<<"Goal:"<<goal<<endl;
-        cout<<"Ingoal"<<ingoal<<endl;
-//        cerr<<gettarget()<<endl;
-        cerr<<getorank()<<endl;
-        if(ue==1)
+        cout << "Goal:" << goal << endl;
+        cout << "Ingoal" << ingoal << endl;
+        // cerr<<gettarget()<<endl;
+        cerr << getorank() << endl;
+        if (ue == 1)
         {
-            hitsfile<<Measure(K)<<endl;
-            difffile<<TopkDiff(K)<<endl;
+            hitsfile << Measure(K) << endl;
+            difffile << TopkDiff(K) << endl;
         }
-//       } cout<<"count: "<<ct<<endl<<endl;
+        // } cout<<"count: "<<ct<<endl<<endl;
 
-
-        for(int i=0;i<N;i++)
+        for (int i = 0; i<N; i++)
         {
-            myfile<<w[i]<<" ";
+            myfile << w[i] << " ";
         }
-        myfile<<endl;
+        myfile << endl;
     }
 
+    // the results are here
     hamcompare<<"G-cap"<<g<<"Ham"<<name[method-1]<<" "<<ttham/(rounds-nofes+1)<<endl;
     cerr<<"Ham"<<name[method-1]<<" "<<ttham/(rounds-nofes+1)<<endl;
     hamcompare<<"G-cap"<<g<<"Name"<<name[method-1]<< g_size<<" no-fea rate"<<nofes*1.0/rounds<<endl;
@@ -1315,339 +1231,32 @@ void VaryTest(int g,int user_id, int rounds, int method, int g_size, int ue)
     timefile<<(clock() -start)/CLOCKS_PER_SEC<<endl;
 }
 
-
-void mcreadembed(int user_id)
-{
-    ifstream infileaw,infileitem,infilew, filewt;
-    string path="C:/Users/liang/PycharmProjects/whynotquery/Wrap/Netflix/";
-    tp = path+"1G";
-    string awp=path+"gl";
-    string itemp=path+"item";
-    string wgp = path+"100user";
-    string costp=path+"/mcmf/mdaham";
-    filewt.open(wgp);
-//    inpair.open(path+"pairs");
-    infileaw.open (awp);
-    infileitem.open (itemp);
-    infilew.open (wgp);
-    ofstream myfile, hitsfile, hamfile, difffile;
-    myfile.open (path+"/mcmf/mdawre"+to_string(user_id));
-    hitsfile.open(path+"/mcmf/mdahits"+to_string(user_id));
-    difffile.open(path+"/mcmf/mdadiff"+to_string(user_id));
-    hamfile.open(costp+to_string(user_id));
-    readT();
-
-
-    for(int i=0;i<N;i++)
-    {
-        infileaw>>aw[i];
-//        w[i]=-0.5;
-        w[i]=aw[i];
-
-    }
-    for(int i=0;i<100;i++)
-    {
-        for(int j=0;j<N;j++)
-        {
-            filewt>>wt[i][j];
-        }
-    }
-    for(int i=0;i<=user_id;i++)
-    {
-        for(int j=0;j<N;j++)
-        {
-            infilew>>wg[j];
-        }
-    }
-    for(int i=0;i<M;i++)
-    {
-        for(int j=0;j<N;j++)
-        {
-            infileitem >> item[i][j];
-        }
-    }
-
-//    srand(time(0));
-    int cx[N], cy[N], candidate=0;
-    int ham=0;
-    for(int step=1;step<=R;step++) {
-        cerr<<"Step:"<<step<<endl;
-        int ct = 0;
-        candidate = 0;
-        for (int loop = 1; loop <= 1; loop++) {
-
-//                for(int i=0;i<N;i++)
-//                {
-//                    x[i]=item[a[ct]][i];
-//                    y[i]=item[b[ct]][i];
-//                }
-
-            ct++;
-//            cerr<<getorank() * getnrank()<<endl;
-            while (1) {
-//                pause(1);
-
-                int ta = rand() % M;
-                if(topset[ta]==1)
-                    continue;
-                int tb = rand() % K;
-                for (int i = 0; i < N; i++) {
-                    x[i] = item[ta][i];
-                    y[i] = item[rg[tb].id][i];
-                }
-
-                if (getorank() * getnrank() < 0) {
-//                    cout<<a<<" "<<b<<endl;
-                    break;
-                }
-            }
-            if (getorank() < 0) {
-                for (int i = 0; i < N; i++) {
-                    swap(x[i], y[i]);
-                }
-            }
-//            cerr<<gettarget()<<endl;
-            cerr<<getorank()<<endl;
-//            cerr<<getnrank()<<endl;
-            ham = testmc(0);
-            if(getorank()>1e-5)
-                loop--;
-
-        }
-        double ingoal=0;
-        for(int i=0;i<N;i++)
-        {
-            if(inset[i]||outset[i])
-            {
-                cout<<i<<" "<<insum[i]<<" "<<outsum[i]<<endl;
-                ingoal+=insum[i];
-            }
-        }
-        cout<<"Goal:"<<goal<<endl;
-        cout<<"Ingoal"<<ingoal<<endl;
-//        cerr<<gettarget()<<endl;
-        cerr<<getorank()<<endl;
-        hitsfile<<Measure(K)<<endl;
-        difffile<<TopkDiff(K)<<endl;
-//        cout<<"count: "<<ct<<endl<<endl;
-
-        hamfile<<ham<<endl;
-        for(int i=0;i<N;i++)
-        {
-            myfile<<w[i]<<" ";
-        }
-        myfile<<endl;
-    }
-}
-
-
 void testframe(string cur)
 {
+    // datasets
+    string dataset[5] = {"Amazon", "Netflix", "Foursquare", "Movielens", "RateBeer"};
+    //size of each dataset
+    int msize[5] = {14000, 14000, 14000, 3600, 2700};
 
-    string dataset[5]={"Amazon","Netflix", "Foursquare","Movielens", "RateBeer"};
-    int msize[5]={14000, 14000,14000,3600,2700};
-    for(int d = 0;d<3;d++)
+    // loop for each dataset
+    for(int d = 0; d < 5;d++)
     {
-//        if(cur.size()==0)
-//            path = "C:/Users/liang/PycharmProjects/whynotquery/Wrap/500/"+dataset[d]+"/";
-//        else
-//        {
-//            path=cur;
-//            curtimefile.open("timesaver.txt");
-//            d=10;
-//        }
-
-//        path="C:/Users/liang/PycharmProjects/whynotquery/Wrap/"+dataset[d]+"/";
+       
         M = msize[d];
-        path="C:/Users/liang/PycharmProjects/whynotquery/BPR/"+dataset[d]+"/";
+        path = "$to_be_set$"
 
-        for(int i=25;i<=30;i++)
+        for(int i = 25; i <= 30; i++)
         {
-            int user_id=i;
-            VaryTest(2, user_id, 50, 5, 2, 1);
-//            VaryTest(2,user_id, 50,1,2,1);
-//            VaryTest(2,user_id, 50,2,2,1);
-//            VaryTest(2,user_id, 50,3,2,1);
-//            VaryTest(2,user_id, 50,4,2,1);
-//            VaryTest(2, user_id, 50, 5, 2,1);
+            // choose which user to be experimented
+            int user_id = i;
+            VaryTest( user_id, 50, 5, 1);
+
         }
 
-//        for(int vary_cap=0;vary_cap<6;vary_cap++)
-//        {
-//            VaryTest(vary_cap,user_id,100,1,2,0);
-//            VaryTest(vary_cap,user_id,100,2,2,0);
-//            VaryTest(vary_cap,user_id,100,3,2,0);
-//        }
-//        for(int vary_size=0;vary_size<5;vary_size++)
-//        {
-//            VaryTest(1,user_id,100,1,vary_size,0);
-//            VaryTest(1,user_id,100,2,vary_size,0);
-//            VaryTest(1,user_id,100,3,vary_size,0);
-//        }
-
-
-
-
     }
-
-//
-//    for(int s=0;s<5;s++)
-//    {
-//        for(int g=0;g<7;g++)
-//        {
-////            VaryTest(g,0,100, 1,s);
-////            VaryTest(g,0,100, 2,s);
-////            VaryTest(g,0, 100,3, s);
-//        }
-//    }
-
 }
 
 
-
-string curpath= "C:/Users/liang/Downloads/housevalue.txt";
-string logpath = "C:/Users/liang/Downloads/logs/log.txt";
-string gpath = "C:/Users/liang/Downloads/logs/genG.txt";
-vector<vector<double> > itemvec, rankitems;
-ofstream logfile;
-
-double uplimit[6] ={2101.0, 11.0, 1605.0, 128.0, 4309.0, 71.0};
-vector<int> invert(6);
-void printrank(int flag)
-{
-    if(flag>1)
-    {
-//        for(int i=0;i<6;i++)
-        {
-            cout<<"Price BedRooms  Landsize Education DistoTrain Transportation"<<endl;
-        }
-        logfile<<"10 Properties Rank"<<endl;
-    }
-
-    vector<pair<double, int>>rankscore;
-    for(int i=0;i<10;i++)
-    {
-        rankscore.push_back({0,0});
-        for(int j=0;j<6;j++)
-        {
-            rankscore[i].first += rankitems[i][j]*w[j];
-        }
-
-        rankscore[i].second  = i;
-
-
-    }
-    sort(rankscore.begin(), rankscore.end());
-    for(int i=0;i<10;i++)
-    {
-        int id = rankscore[9-i].second;
-        invert[i] = id;
-        if(flag>1)
-            cout<<i<<" ";
-        if(flag%2)
-        {
-            logfile<<i<<" ";
-        }
-        for(int j=0;j<6;j++)
-        {
-            if(flag%2)
-            {
-//                logfile<<rankitems[id][j]<<" ";
-                if(j==0)
-                    logfile<<2001-rankitems[id][j]*uplimit[j]<<" ";
-                else if(j==4)
-                    logfile<<4500 - rankitems[id][j]*uplimit[j]<<" ";
-                else if(j==5)
-                    logfile<<80-rankitems[id][j]*uplimit[j]<<" ";
-                else logfile<< rankitems[id][j]*uplimit[j]<<" ";
-            }
-            if(flag>1)
-            {
-                if(j==0)
-                    cout<<2001-rankitems[id][j]*uplimit[j]<<" ";
-                else if(j==4)
-                    cout<<4500 - rankitems[id][j]*uplimit[j]<<" ";
-                else if(j==5)
-                    cout<<80-rankitems[id][j]*uplimit[j]<<" ";
-                else cout<< rankitems[id][j]*uplimit[j]<<" ";
-            }
-
-        }
-        if(flag%2)
-            logfile<<endl;
-        if(flag>1)
-            cout<<endl;
-    }
-    if(flag>1)
-    {
-        for(int i=0;i<6;i++)
-        {
-            cout<<w[i]<<" ";
-        }
-        cout<<endl;
-    }
-    if(flag%2)
-    {
-        for(int i=0;i<6;i++)
-        {
-            logfile<<w[i]<<" ";
-        }
-        logfile<<endl;
-    }
-
-
-}
-void inputall(int numItems)
-{
-    int preitem[10]={248, 337 ,271 ,357 ,516 ,191, 117, 338, 522, 82 };
-    logfile.open(logpath,ofstream::app);
-    logfile<<"#"<<endl;
-    ifstream inputitems;
-    inputitems.open(curpath);
-    mt19937 mt_rand(time(0));
-
-    for(int ct=0; ct<numItems; ct++)
-    {
-        vector<double> tempvec;
-        for(int i=0;i<6;i++)
-        {
-            double tmp;
-            inputitems >> tmp;
-            tempvec.push_back(tmp);
-//            cout<<tmp<<" ";
-        }
-//        cout<<endl;
-        itemvec.push_back(tempvec);
-    }
-    for(int i=0;i<10;i++)
-    {
-//        int temp = mt_rand()%numItems;
-        int temp = preitem[i];
-        vector<double> tmp;
-        logfile<<temp<<" ";
-        for(int j=0;j<6;j++)
-        {
-            tmp.push_back(itemvec[temp][j]);
-        }
-        rankitems.push_back(tmp);
-    }
-    logfile<<endl;
-
-    cout<<" Selected"<<endl;
-    for(int i=0;i<10;i++)
-    {
-        cout<<i<<": ";
-        for(int j=0;j<6;j++)
-        {
-            logfile<<rankitems[i][j]<<" ";
-            cout<<rankitems[i][j]<<" ";
-        }
-        logfile<<endl;
-        cout<<endl;
-    }
-
-
-}
 void initW()
 {
     for(int i=0;i<6;i++)
@@ -1685,13 +1294,6 @@ void BuildG()
             logfile<<T[i][j]<<" ";
             if(i==0||j==0)
                 T[i][j] = 0.05;
-//            if(i==5)
-//                T[i][j] = 0.05;
-////            if(i==1)
-////                T[i][j] = 0.08;
-//
-//            if(j==5)
-//                T[i][j] = 0.1;
 
         }
         logfile<<endl;
@@ -1699,25 +1301,24 @@ void BuildG()
 
 }
 
-
+// This is to simulate the user's behaviour and show the results
 void simulation()
 {
-
-    inputall(663);
+    inputall(663); //pre-selected items
     initW();
-//    BuildG();
+    // BuildG();
     loadG();
     while(1)
     {
         printrank(3);
-        cout<<"Which pair do you want to reverse? (0 0 for break)"<<endl;
+        cout << "Which pair do you want to reverse? (0 0 for break)" << endl;
         int tmpx, tmpy;
-        cin>>tmpx>>tmpy;
-        logfile<<tmpx<<" "<<tmpy<<endl;
-        if(tmpx==0&&tmpy==0)
+        cin >> tmpx >> tmpy;
+        logfile << tmpx << " " << tmpy <<endl;
+        if(tmpx == 0 && tmpy == 0)
             break;
 
-        for(int i=0; i<6; i++)
+        for(int i = 0; i < 6; i++)
         {
             int idx, idy;
             idx = invert[tmpx];
@@ -1739,6 +1340,7 @@ void simulation()
     }
 }
 
+// This function is used to generate the transition graph
 void GenerateG(int repTimes)
 {
     const int numItems = 663;
@@ -1810,25 +1412,22 @@ void GenerateG(int repTimes)
         }
         Gpath<<endl;
     }
-
-
-
-
-
 }
+
+
 int main(int argc, char** argv)
 {
 
-    //testframe(path); 
     // this is for experiments.
+    testframe(path); 
 
-    //    GenerateG(10000); 
     // this is to generate the transition graph
+    //    GenerateG(10000);
 
-    //    simulation();
     // this is for simulation of the real world data
-    //    logfile<<"#"<<endl;
+    //    simulation();
 
+    //    logfile<<"#"<<endl;
 
     return 0;
 }
